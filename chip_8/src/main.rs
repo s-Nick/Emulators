@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 
+use std::convert::TryInto;
+
 
 #[derive(Debug,Clone)]
 struct Cpu{
     registers: [u8; 16],
     curr_operation: u16,
-    memory: [u16; 4096], // atm the memory can take twice the amount of data than common chip8
-                         // due to the utilization of u16 instead of u8.
+    memory: [u8; 4096], 
     pc: u16,
     stack: Vec<u16>,
     stack_pointer: u8,
@@ -38,10 +39,13 @@ impl Cpu{
         match (c, last_12) {
             (0, _) => self.zeroes_c(last_12),
             (1, _) => self.jump_to_nnn(last_12),
+            (2, _) => self.call_function(last_12),
+            (3|4|6|7, _) => self.xkk_instructions(c, last_12),
             (8, _) => self.two_registers_op(last_12),
             (_, _) => todo!(),
         }
     }
+
     fn zeroes_c(&mut self, last_12_bits: u16){
        let last_nibble = (last_12_bits & 0x000F) as u16;
        match last_nibble {
@@ -50,6 +54,19 @@ impl Cpu{
             _ => todo!(),
        }
     }
+
+    fn xkk_instructions(&mut self, d: u8, last_12_bits: u16) {
+        let x: u8 = ((last_12_bits & 0x0F00) >> 8).try_into().unwrap();
+        let kk: u8 = (last_12_bits & 0x00FF).try_into().unwrap();
+        match d {
+            3 => self.skip_equal(x, kk),
+            4 => self.skip_not_equal(x, kk),
+            6 => self.set_vx_to_kk(x, kk),
+            7 => self.sum_vx_to_kk(x, kk),
+            _ => panic!(),
+        };
+    }
+
     fn two_registers_op(&mut self, last_12_bits: u16) {
         let x = ((last_12_bits & 0x0F00) >> 8) as u8;
         let y = ((last_12_bits & 0x00F0) >> 4) as u8;
@@ -67,9 +84,11 @@ impl Cpu{
             (_, _, _) => todo!(),
         }
     } 
+
     fn add_xy(&mut self, a: u8, b: u8) {
         self.registers[a as usize] += self.registers[b as usize];
     }
+
     fn setx_to_y(&mut self, x: u8, y: u8) {
         self.registers[x as usize] = self.registers[y as usize];
     }
@@ -115,9 +134,41 @@ impl Cpu{
         */
          self.pc =  last_12_bits;
     }
+
     fn return_func(&mut self){
         self.pc = self.stack.pop().unwrap();
         self.stack_pointer -= 1;
+    }
+
+    fn call_function(&mut self, last_12_bits: u16) {
+        if self.stack.len() >= 16 {
+            panic!();
+        } 
+        else {
+            self.stack_pointer += 1;
+            self.stack.push(self.pc);
+            self.pc = last_12_bits;
+        }
+    }
+
+    fn set_vx_to_kk(&mut self, x: u8, kk: u8 ) {
+        self.registers[x as usize] = kk;
+    }
+
+    fn sum_vx_to_kk(&mut self, x: u8, kk: u8) {
+        self.registers[x as usize] = self.registers[x as usize] + kk;
+    }
+
+    fn skip_equal(&mut self, x: u8, kk: u8) {
+        if self.registers[x as usize] == kk {
+            self.pc += 2;
+        }
+    }
+
+    fn skip_not_equal(&mut self, x: u8, kk: u8) {
+        if self.registers[x as usize] != kk {
+            self.pc += 2;
+        }
     }
 }
 
