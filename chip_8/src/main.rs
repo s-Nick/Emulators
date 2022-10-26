@@ -5,7 +5,8 @@
 struct Cpu{
     registers: [u8; 16],
     curr_operation: u16,
-    memory: [u16; 4096],
+    memory: [u16; 4096], // atm the memory can take twice the amount of data than common chip8
+                         // due to the utilization of u16 instead of u8.
     pc: u16,
     stack: Vec<u16>,
     stack_pointer: u8,
@@ -26,16 +27,33 @@ impl Cpu{
     }
     fn decode_op(&mut self) {
         let c = ((self.curr_operation & 0xF000) >> 12) as u8;
+        let last_12 = (self.curr_operation & 0x0FFF) as u16;
+        /*
+         * keeping it and use it where the last 12 bits need 
+         * to be split in 3 different vars.
         let x = ((self.curr_operation & 0x0F00) >> 8) as u8;
         let y = ((self.curr_operation & 0x00F0) >> 4) as u8;
-        let d = (self.curr_operation & 0x000F)  as u8;
-        match (c, x, y, d) {
-            (8, _, _, _) => self.two_registers_op(x, y,d),
-            (1, _, _, _) => self.jump_to_nnn(x, y, d),
-            (_, _, _, _) => todo!(),
+        let d = (elf.curr_operation & 0x000F)  as u8;
+        */
+        match (c, last_12) {
+            (0, _) => self.zeroes_c(last_12),
+            (1, _) => self.jump_to_nnn(last_12),
+            (8, _) => self.two_registers_op(last_12),
+            (_, _) => todo!(),
         }
     }
-    fn two_registers_op(&mut self, x: u8, y: u8, d: u8) {
+    fn zeroes_c(&mut self, last_12_bits: u16){
+       let last_nibble = (last_12_bits & 0x000F) as u16;
+       match last_nibble {
+            0x000E => self.return_func(),
+            0x0000 => todo!(),
+            _ => todo!(),
+       }
+    }
+    fn two_registers_op(&mut self, last_12_bits: u16) {
+        let x = ((last_12_bits & 0x0F00) >> 8) as u8;
+        let y = ((last_12_bits & 0x00F0) >> 4) as u8;
+        let d = ( last_12_bits & 0x000F)  as u8;
         match (x, y, d) {
             (_, _, 0) => self.registers[x as usize] = self.registers[y as usize],
             (_, _, 1) => self.registers[x as usize] |= self.registers[y as usize],
@@ -87,15 +105,20 @@ impl Cpu{
         self.registers[x as usize] <<= 1;
     }
 
-    fn jump_to_nnn(&mut self, x: u8, y: u8, d: u8) {
+    fn jump_to_nnn(&mut self, last_12_bits: u16) {
         self.stack.push(self.pc);
+        /*
         let nnn: u16 = (0xFFF as u16) |
                        ( ((x as u16) << (12 as u16)) & 
                        ((y as u16) << 8 as u16) & 
                        ((d as u16) << 4 as u16)) as u16;
-        self.pc = nnn as u16; 
+        */
+         self.pc =  last_12_bits;
     }
-    fn call_nnn(&mut self, )
+    fn return_func(&mut self){
+        self.pc = self.stack.pop().unwrap();
+        self.stack_pointer -= 1;
+    }
 }
 
 fn main() {
