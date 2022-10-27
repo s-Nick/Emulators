@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::convert::TryInto;
-
+use rand::Rng;
 
 #[derive(Debug,Clone)]
 struct Cpu{
@@ -11,6 +11,7 @@ struct Cpu{
     pc: u16,
     stack: Vec<u16>,
     stack_pointer: u8,
+    index: u16,
 }
 
 impl Cpu{
@@ -24,6 +25,7 @@ impl Cpu{
             stack_pointer: 0,
             // I do not like using the vec in this case, more over some fields should
             // not be mutable. I will check how to do it.
+            index: 0,
         }
     }
     fn decode_op(&mut self) {
@@ -40,9 +42,11 @@ impl Cpu{
             (0, _) => self.zeroes_c(last_12),
             (1, _) => self.jump_to_nnn(last_12),
             (2, _) => self.call_function(last_12),
-            (3|4|6|7, _) => self.xkk_instructions(c, last_12),
+            (3|4|6|7 | 0xC, _) => self.xkk_instructions(c, last_12),
             (5, _) => self.skip_from_register_comp(last_12),
             (8, _) => self.two_registers_op(last_12),
+            (0xA, _) => self.load_addr_i(last_12),
+            (0xB, _) => self.jump_nnn_v0(last_12),
             (_, _) => todo!(),
         }
     }
@@ -64,6 +68,7 @@ impl Cpu{
             4 => self.skip_not_equal(x, kk),
             6 => self.set_vx_to_kk(x, kk),
             7 => self.sum_vx_to_kk(x, kk),
+            0xC => self.random_vx_kk(x, kk),
             _ => panic!(),
         };
     }
@@ -121,7 +126,7 @@ impl Cpu{
     }
 
     fn shift_left_x(&mut self, x: u8) {
-        self.registers[0xF] = match self.registers[x as usize] & 0x8000 >> 8{
+        self.registers[0xF] = match self.registers[x as usize] & 0x80 >> 7 { // check the mlb value
                                 1 => 1,
                                 0 => 0,
                                 _ => panic!(),
@@ -184,6 +189,19 @@ impl Cpu{
         }
     }
 
+    fn load_addr_i(&mut self, last_12_bits: u16) {
+        self.index = last_12_bits;
+    }
+
+    fn jump_nnn_v0(&mut self, last_12_bits: u16) {
+        self.pc = last_12_bits + (self.registers[0] as u16);
+    }
+
+    fn random_vx_kk(&mut self, x: u8, kk: u8) {
+        let rng = rand::thread_rng();
+        let r_n1 = rng.clone().gen_range(0 ..=255);
+        self.registers[x as usize] = r_n1 & kk;
+    }
 }
 
 fn main() {
