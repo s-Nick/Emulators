@@ -81,7 +81,7 @@ impl Cpu{
             (_, _, 5) => self.registers[x as usize] -= self.registers[y as usize],
             (_, _, 6) => self.shift_right_x(x),
             (_, _, 7) => self.sub_yx(x, y),
-            (_, _, 0xE) => self.shift_left_x(x,y),
+            (_, _, 0xE) => self.shift_left_x(x),
             (_, _, _) => todo!(),
         }
     } 
