@@ -41,6 +41,7 @@ impl Cpu{
             (1, _) => self.jump_to_nnn(last_12),
             (2, _) => self.call_function(last_12),
             (3|4|6|7, _) => self.xkk_instructions(c, last_12),
+            (5, _) => self.skip_from_register_comp(last_12),
             (8, _) => self.two_registers_op(last_12),
             (_, _) => todo!(),
         }
@@ -80,7 +81,7 @@ impl Cpu{
             (_, _, 5) => self.registers[x as usize] -= self.registers[y as usize],
             (_, _, 6) => self.shift_right_x(x),
             (_, _, 7) => self.sub_yx(x, y),
-            (_, _, 0xE) => todo!(),
+            (_, _, 0xE) => self.shift_left_x(x,y),
             (_, _, _) => todo!(),
         }
     } 
@@ -120,7 +121,11 @@ impl Cpu{
     }
 
     fn shift_left_x(&mut self, x: u8) {
-        self.registers[0xF] = self.registers[x as usize] & 0x8;
+        self.registers[0xF] = match self.registers[x as usize] & 0x8000 >> 8{
+                                1 => 1,
+                                0 => 0,
+                                _ => panic!(),
+                            };
         self.registers[x as usize] <<= 1;
     }
 
@@ -170,6 +175,15 @@ impl Cpu{
             self.pc += 2;
         }
     }
+
+    fn skip_from_register_comp(&mut self, last_12_bits: u16) {
+        let x = ((last_12_bits & 0x0F00) >> 8) as u8;
+        let y = ((last_12_bits & 0x00F0) >> 4) as u8;
+        if self.registers[x as usize] == self.registers[y as usize] {
+            self.pc += 2;
+        }
+    }
+
 }
 
 fn main() {
