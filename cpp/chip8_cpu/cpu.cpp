@@ -157,3 +157,9 @@ void Chip8_cpu::jump_to_v0_plus_nnn(const uint16_t op_code) {
   this->pc = registers[0u] + get_nnn(op_code);
   return;
 }
+
+void Chip8_cpu::return_from_funct(const uint16_t op_code) {
+  this->pc = this->stack.top();
+  this->stack.pop();
+  sp--;
+}
