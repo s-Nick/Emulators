@@ -51,6 +51,8 @@ class Chip8_cpu {
     void call_nnn(const uint16_t op_code); // 0x2nnn
     void load_mem_addr_I(const uint16_t op_code); // 0xAnnn
     void jump_to_v0_plus_nnn(const uint16_t op_code); // 0xBnnn
+    void jump_equals_xy(const uint16_t op_code); // 0x5xy0
+    void jump_not_equals_xy(const uint16_t op_code); // 0x9xy0
 
   public:
     
