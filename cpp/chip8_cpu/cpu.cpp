@@ -37,6 +37,9 @@ void Chip8_cpu::exec_op(const uint16_t op_code) {
   case 4u:
     Chip8_cpu::skip_not_equal(op_code);
     break;
+  case 5u:
+    Chip8_cpu::jump_equals_xy(op_code);
+    break;
   case 6u:
     Chip8_cpu::loadi_to_vx(op_code);
     break;
@@ -45,6 +48,9 @@ void Chip8_cpu::exec_op(const uint16_t op_code) {
     break;
   case 8u:
     Chip8_cpu::op_8XY(op_code);
+    break;
+  case 9u:
+    Chip8_cpu::jump_not_equals_xy(op_code);
     break;
   case 0xAu:
     Chip8_cpu::load_mem_addr_I(op_code);
@@ -162,4 +168,21 @@ void Chip8_cpu::return_from_funct(const uint16_t op_code) {
   this->pc = this->stack.top();
   this->stack.pop();
   sp--;
+}
+
+void Chip8_cpu::jump_equals_xy(const uint16_t op_code) {
+  const uint8_t x = (op_code & 0x0F00u) >> 8;
+  const uint8_t y = (op_code & 0x00F0u) >> 4;
+  if ( this->registers[x] == this->registers[y] )
+    this->pc += 2;
+  return;
+}
+
+
+void Chip8_cpu::jump_not_equals_xy(const uint16_t op_code) {
+  const uint8_t x = (op_code & 0x0F00u) >> 8;
+  const uint8_t y = (op_code & 0x00F0u) >> 4;
+  if ( this->registers[x] != this->registers[y] )
+    this->pc += 2;
+  return;
 }
