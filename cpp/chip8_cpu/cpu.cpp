@@ -1,4 +1,10 @@
-#include "cpu.hpp"
+#include "cpu.h"
+
+Chip8_cpu::~Chip8_cpu() {
+  std::cout << "test destructor " << std::endl;
+  cpu_.get_deleter();
+  return;
+}
 
 const auto split_last_12_bit = [](const uint16_t op_code) -> std::pair<uint8_t,uint8_t> {
   uint8_t x = static_cast<uint8_t>(op_code & 0x0F00u) >> 8u;

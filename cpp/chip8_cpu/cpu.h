@@ -56,7 +56,8 @@ class Chip8_cpu {
 
   public:
     
-    ~Chip8_cpu() = default;
+    ~Chip8_cpu();// = default;
+    //void test_destructor();
     static std::unique_ptr<Chip8_cpu>& get_instance();
     void exec_op(const uint16_t op_code);    
 };
