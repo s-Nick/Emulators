@@ -7,6 +7,7 @@ project(Chip8Emulator)
 #add_library(cpu_library STATIC cpu.cpp)
 set(LIBRARY_OUTPU_PATH lib)
 
+find_package(SDL2 REQUIRED)
 add_library(cpu_library STATIC cpu.cpp)
 add_executable(test test.cpp )
 #add_library(cpu_library STATIC cpu.cpp)
